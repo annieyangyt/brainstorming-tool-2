@@ -21,13 +21,14 @@ export default async function handler(req, res) {
     }
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
     
     if (!GEMINI_API_KEY) {
       return res.status(500).json({ error: 'API Key not configured' });
     }
 
     const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
       {
         method: 'POST',
         headers: {
@@ -37,7 +38,14 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           contents: [{
             parts: [{ text: prompt }]
-          }]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            maxOutputTokens: 512,
+            thinkingConfig: {
+              thinkingBudget: 0
+            }
+          }
         })
       }
     );
@@ -45,8 +53,16 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API Error:', errorText);
-      return res.status(response.status).json({ 
-        error: `Gemini API Error: ${response.status} ${JSON.stringify(response)}`,
+      let errorMessage = `Gemini API Error: ${response.status}`;
+      try {
+        const parsedError = JSON.parse(errorText);
+        errorMessage = parsedError.error?.message || errorMessage;
+      } catch {
+        if (errorText) errorMessage = errorText;
+      }
+      return res.status(response.status).json({
+        error: errorMessage,
+        model: GEMINI_MODEL
       });
     }
 
