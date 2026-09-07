@@ -40,11 +40,7 @@ export default async function handler(req, res) {
             parts: [{ text: prompt }]
           }],
           generationConfig: {
-            responseMimeType: 'application/json',
-            maxOutputTokens: 512,
-            thinkingConfig: {
-              thinkingBudget: 0
-            }
+            maxOutputTokens: 512
           }
         })
       }
